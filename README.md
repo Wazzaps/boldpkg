@@ -38,9 +38,29 @@ A mix of the reproducibility of [`Nix`](https://nixos.org) and the user-friendli
 - Repository: A list of packages and recipes
 - Repository generator: Creates the repository
 - Binary cache: A networked cache of signed compiled packages
-- Snapshot: A list of installed packages
+- Snapshot: A local list of installed packages
+- System: A list of installed packages managed by the repository
 
 ## Tasks (todo)
+
+- [x] Evaluate js repository
+- [x] Create `snapshot` on update and install
+- [x] Search package cache
+- [x] Hacking on packages
+- [x] `System` support
+- [ ] Also install dependencies
+  - [ ] In `bold install`
+  - [ ] In `System`s
+- [ ] Add glibc, gcc, coreutils, bash packages
+- [ ] Queue install until reboot
+- [ ] Package removal
+- [ ] Actually fetch packages
+- [ ] Build packages if missing from binary cache
+- [ ] Mirror server
+- [ ] Build server
+- [ ] Package signatures
+- [ ] Add lots of packages
+- [ ] Host Build+Mirror server
 
 ## CLI Syntax (MVP)
 

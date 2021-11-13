@@ -1,13 +1,20 @@
 import os
-import subprocess as sp
-
 import sys
-
-LONG_SQLITE_CMD = ['sqlite3', 'bold/metadata.sqlite3', '.mode tabs', 'select hash, name, shortdesc from packages']
-SHORT_SQLITE_CMD = ['sqlite3', 'bold/metadata.sqlite3', '.mode tabs', 'select name, shortdesc from packages']
+import pipes
+import subprocess as sp
+from pathlib import Path
 
 
 def cmd_search(args):
+    cache = Path(args.root) / 'snapshot' / 'current' / 'cache.db3'
+
+    if not cache.exists():
+        print('Run `bold update` before searching for packages')
+        return
+
+    LONG_SQLITE_CMD = ['sqlite3', str(cache), '.mode tabs', 'select hash, name, shortdesc from packages']
+    SHORT_SQLITE_CMD = ['sqlite3', str(cache), '.mode tabs', 'select name, shortdesc from packages']
+
     if len(args.keyword) == 0:
         if sys.stdout.isatty():
             # If no args provided and output is a tty, use fzf to filter packages
@@ -16,8 +23,8 @@ def cmd_search(args):
             fzf_proc = sp.Popen(
                 [
                     'fzf', '--with-nth=2..',
-                    '--preview=sqlite3 bold/metadata.sqlite3 '
-                    '"SELECT metadata FROM packages WHERE hash = {1} and name = {2}"'
+                    f'--preview=sqlite3 {pipes.quote(str(cache))} '
+                    '"SELECT metadata FROM packages WHERE hash = {1} and name = {2}" | jq'
                 ],
                 stdin=os.fdopen(pipe_in),
                 env={'SHELL': '/bin/sh'},

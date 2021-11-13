@@ -1,4 +1,4 @@
-import {Recipe} from "../utils.js";
+import {Recipe} from "./utils.js";
 
 export const busybox = ({}) => {
     return new Recipe({
@@ -8,7 +8,7 @@ export const busybox = ({}) => {
         recipe: {
             externals: {
                 src: 'src://busybox',
-                config: 'repo:///apps/busybox_config',
+                config: 'repo:///bold_unstable/app_assets/busybox_config',
             },
             phases: {
                 unpack: {
@@ -40,7 +40,7 @@ export const busybox = ({}) => {
     });
 };
 
-export const hello_sh = ({}) => {
+export const hello_sh = ({message}) => {
     return new Recipe({
         name: "hello_sh",
         version: "0.1.0",
@@ -54,7 +54,7 @@ export const hello_sh = ({}) => {
                     cmd: '',
                 },
                 patch: {
-                    cmd: '',
+                    cmd: `echo "echo \"${message ?? "Hello, World!"}\"" >> "$EXT_src"/hello`,
                 },
                 build: {
                     cmd: '',
@@ -63,7 +63,7 @@ export const hello_sh = ({}) => {
                     cmd: '',
                 },
                 install: {
-                    cmd: 'cp "$EXT_src"/hello "$DESTDIR"',
+                    cmd: 'mkdir -p "$DESTDIR/bin" && cp "$EXT_src"/hello "$DESTDIR/bin"',
                 },
                 fixup: {
                     cmd: '',

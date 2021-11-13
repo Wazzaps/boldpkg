@@ -1,5 +1,6 @@
 import * as os from "os";
 import * as std from "std";
+import * as apps from "./apps.js";
 
 // Seems to work
 // Source: https://stackoverflow.com/a/53593328
@@ -61,6 +62,7 @@ function deep_merge(source, target) {
 export class Repo {
     constructor() {
         this.recipes = {};
+        this.systems = {};
     }
 
     addRecipe(recipe) {
@@ -70,10 +72,30 @@ export class Repo {
         this.recipes[`${recipe.metadata.name}@${recipe.hash()}`] = recipe.metadata;
     }
 
+    addSystem(alias, system) {
+        if (typeof system === "function") {
+            system = system({});
+        }
+        system.metadata.packages = system.metadata.packages.map((recipe) => {
+            if (typeof recipe === "function") {
+                recipe = recipe({});
+            }
+            this.addRecipe(recipe);
+            return `${recipe.metadata.name}@${recipe.hash()}`;
+        });
+        this.systems[alias] = system.metadata;
+    }
+
     toString() {
         return sortedJsonStringify({
             recipes: this.recipes,
+            systems: this.systems,
         });
+    }
+
+    addCommonRecipes() {
+        this.addRecipe(apps.hello_sh);
+        this.addRecipe(apps.busybox);
     }
 }
 
@@ -84,10 +106,20 @@ export class Recipe {
     }
 
     hash() {
-        return run_cmd(['./hashRecipe.sh'], sortedJsonStringify(this.metadata)).trim();
+        return run_cmd(['./bold_unstable/hashRecipe.sh'], sortedJsonStringify(this.metadata)).trim();
     }
 
     override(updates) {
         return new Recipe(deep_merge(updates, deep_merge(this.metadata, {})));
+    }
+}
+
+export class System {
+    constructor({packages, users, deployTarget}) {
+        this.metadata = {packages, users, deployTarget};
+    }
+
+    override(updates) {
+        return new System(deep_merge(updates, deep_merge(this.metadata, {})));
     }
 }

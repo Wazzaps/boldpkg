@@ -3,8 +3,8 @@ from pathlib import Path
 
 from cmd_search import cmd_search
 from cmd_hack import cmd_hack
-from cmd_source import cmd_source_list
 from cmd_update import cmd_update
+from cmd_install import cmd_install
 
 ROOT = Path(__file__).parent.parent / 'bold'
 
@@ -16,24 +16,24 @@ def unimplemented(_args):
 
 def main():
     parser = argparse.ArgumentParser(description='BoldOS Package manager')
-    parser.add_argument('--repo', help='Repository path', default=str(ROOT))
+    parser.add_argument('--root', help='Root path (default: /bold)', default=str(ROOT))
     subparsers = parser.add_subparsers(dest='command', required=True)
 
     parser_install = subparsers.add_parser('install')
     parser_install.add_argument('app', nargs='+', help='Name of the app(s) to install')
-    parser_install.add_argument('-q', '--queue', action='store_true', help='Finish install on next `bold switch`')
-    parser_install.set_defaults(func=unimplemented)
+    # parser_install.add_argument('-q', '--queue', action='store_true', help='Finish install on next `bold switch`')
+    parser_install.set_defaults(func=cmd_install)
 
     parser_install = subparsers.add_parser('remove')
     parser_install.add_argument('app', nargs='+', help='Name of the app(s) to install')
-    parser_install.add_argument('-q', '--queue', action='store_true', help='Finish install on next `bold switch`')
+    # parser_install.add_argument('-q', '--queue', action='store_true', help='Finish install on next `bold switch`')
     parser_install.set_defaults(func=unimplemented)
 
     parser_update = subparsers.add_parser('update')
     parser_update.add_argument('app', nargs='*', help='Name of the app(s) to update')
-    parser_update.add_argument('-q', '--queue', action='store_true', help='Finish update on next `bold switch`')
-    parser_update.add_argument('-c', '--check', action='store_true', help='Check for updates, but don\'t install them')
-    parser_update.add_argument('-n', '--no-reload', action='store_true', help='Don\'t reload services')
+    # parser_update.add_argument('-q', '--queue', action='store_true', help='Finish update on next `bold switch`')
+    # parser_update.add_argument('-c', '--check', action='store_true', help='Check for updates, but don\'t install them')
+    # parser_update.add_argument('-n', '--no-reload', action='store_true', help='Don\'t reload services')
     parser_update.set_defaults(func=cmd_update)
 
     parser_search = subparsers.add_parser('search')
@@ -76,13 +76,6 @@ def main():
     parser_gc_archive = subparsers_gc.add_parser('archive')
     parser_gc_archive.add_argument('-o', '--older-than', help='Archive generations older than... (units: h/d/w/m/y)')
     parser_gc_archive.add_argument('generation', nargs='*', help='Archive specific generation(s)')
-
-    parser_source = subparsers.add_parser('source')
-    parser_source.set_defaults(func=cmd_source_list)
-    subparsers_source = parser_source.add_subparsers(dest='action')
-
-    parser_source_list = subparsers_source.add_parser('list')
-    parser_source_list.set_defaults(func=cmd_source_list)
 
     # ---------
 

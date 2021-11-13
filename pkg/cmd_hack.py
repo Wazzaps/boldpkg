@@ -10,8 +10,7 @@ from pathlib import Path
 from yaspin.core import Yaspin
 
 
-def get_recipe(selector):
-    db = sqlite3.connect('bold/metadata.sqlite3')
+def get_recipe(db, selector):
     cursor = db.cursor().execute('select hash, recipe from packages where name=?', (selector,))
     app_hash, recipe = cursor.fetchone()
     return app_hash, json.loads(recipe)
@@ -41,6 +40,7 @@ def _quote(s):
 
 def cmd_hack(args):
     apps = args.app
+    root = Path(args.root)
     main_app = apps[0]
 
     # Create workspace
@@ -60,7 +60,8 @@ def cmd_hack(args):
         exit(1)
 
     # Get recipe for main app
-    app_hash, recipe = get_recipe(main_app)
+    db = sqlite3.connect(root / 'snapshot' / 'current' / 'cache.db3')
+    app_hash, recipe = get_recipe(db, main_app)
 
     # Fetch external resources
     externals = []
@@ -100,7 +101,7 @@ def cmd_hack(args):
         unset = ['BOLD_WORKSPACE']
         script += f'export BOLD_WORKSPACE={_quote(workspace)}\n\n'
 
-        for phase in ['unpack', 'patch', 'build', 'check', 'install', 'fixup', 'installCheck', 'dist']:
+        for phase in ['unpack', 'patch', 'build', 'check', 'install', 'fixup', 'installCheck']:
             for app in [main_app]:
                 unset.append(f'bold_{phase}_{app}')
                 script += f'bold_{phase}_{app}() {{\n'

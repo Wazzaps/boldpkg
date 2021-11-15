@@ -1,48 +1,39 @@
 import datetime
+import shutil
 import sqlite3
 from pathlib import Path
-from typing import List
+import subprocess as sp
 
 from yaspin import yaspin
 
+from building import build_packages
+from utils import verify_valid_packages_names, parse_package_names
 from snapshots import create_snapshot, current_snapshot_metadata
 
 
-def verify_valid_packages_names(db, packages: List[str]):
-    for package in packages:
-        if package.count('@') != 1:
-            print(f'Package name "{package}" is invalid, use full name (i.e. <name>@<hash>)')
-            return False
+def install_package(package: str, root: Path, db, spinner):
+    spinner.text = f'Installing {package}'
+    bincache_archive = root / 'cache' / 'bold' / 'bincache' / f'{package}.tar.zst'
 
-    with db:
-        cursor = db.cursor()
-        cursor.execute('''
-            DROP TABLE IF EXISTS wanted_packages
-        ''')
-        cursor.execute('''
-            CREATE TEMPORARY TABLE "wanted_packages"
-            (
-                "name"              TEXT    NOT NULL,
-                "hash"              TEXT    NOT NULL
+    if (root / 'app' / package).exists():
+        return True
+
+    if not bincache_archive.exists():
+        # TODO: Download from https repo
+
+        # Last resort, build it
+        workspace = (root / 'cache' / 'bold' / 'build' / package)
+        phases = ['fetch', 'unpack', 'patch', 'build', 'check', 'install', 'fixup', 'installCheck', 'pack']
+        try:
+            build_packages(
+                [package], root, workspace, phases,
+                spinner, db, 'Building package: '
             )
-        ''')
-        for package in packages:
-            pkg_name, _, pkg_hash = package.partition('@')
-            cursor.execute('''
-                INSERT INTO "wanted_packages"
-                VALUES (?, ?)
-            ''', (pkg_name, pkg_hash))
-        missing_pkgs = cursor.execute('''
-            SELECT name, hash
-                FROM wanted_packages LEFT OUTER JOIN packages W
-                USING (name, hash)
-                WHERE W.name IS NULL
-        ''').fetchall()
-        if len(missing_pkgs) != 0:
-            missing_pkgs_str = ', '.join(f'{pkg_name}@{pkg_hash}' for pkg_name, pkg_hash in missing_pkgs)
-            print(f'The following packages were not found: {missing_pkgs_str}')
-            return False
+        finally:
+            shutil.rmtree(workspace, ignore_errors=True)
 
+    (root / 'app' / package).mkdir(parents=True)
+    sp.call(['tar', '-xf', str(bincache_archive), '-C', str(root / 'app' / package)])
     return True
 
 
@@ -55,18 +46,34 @@ def cmd_install(args):
 
     # Make sure all packages are in index
     db = sqlite3.connect(root / 'snapshot' / 'current' / 'cache.db3')
-    if not verify_valid_packages_names(db, args.app):
-        return
+    parsed_packages = parse_package_names(db, args.app)
+    if not parsed_packages:
+        exit(1)
+    parsed_packages = list(parsed_packages.values())
+
+    # TODO: Parallelize
+    # TODO: Fetch dependencies
+
+    with yaspin(text='') as spinner:
+        for package in parsed_packages:
+            if not install_package(package, root, db, spinner):
+                return
 
     current_metadata = current_snapshot_metadata(root)
-    current_metadata['installedPackages'] = sorted(list(set(current_metadata['installedPackages'] + args.app)))
-    current_metadata['globalPackages'] = sorted(list(set(current_metadata['globalPackages'] + args.app)))
+    if all(pkg in current_metadata['installedPackages']
+           and pkg in current_metadata['globalPackages'] for pkg in parsed_packages):
+        print('All requested packages already installed')
+        return
+
+    # Create new snapshot
+    current_metadata['installedPackages'] = sorted(list(set(current_metadata['installedPackages'] + parsed_packages)))
+    current_metadata['globalPackages'] = sorted(list(set(current_metadata['globalPackages'] + parsed_packages)))
     with yaspin(text='Creating snapshot with new packages'):
         create_snapshot(
             root=root,
             metadata={
                 'alias': None,
-                'description': f'Installed {", ".join(args.app)}',
+                'description': f'Installed {", ".join(parsed_packages)}',
                 'created': datetime.datetime.now().isoformat(),
                 'installedPackages': current_metadata['installedPackages'],
                 'globalPackages': current_metadata['globalPackages'],

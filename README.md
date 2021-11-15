@@ -48,6 +48,7 @@ A mix of the reproducibility of [`Nix`](https://nixos.org) and the user-friendli
 - [x] Search package cache
 - [x] Hacking on packages
 - [x] `System` support
+- [x] Build packages to archives
 - [ ] Also install dependencies
   - [ ] In `bold install`
   - [ ] In `System`s
@@ -55,7 +56,7 @@ A mix of the reproducibility of [`Nix`](https://nixos.org) and the user-friendli
 - [ ] Queue install until reboot
 - [ ] Package removal
 - [ ] Actually fetch packages
-- [ ] Build packages if missing from binary cache
+- [x] Build packages if missing from binary cache
 - [ ] Mirror server
 - [ ] Build server
 - [ ] Package signatures

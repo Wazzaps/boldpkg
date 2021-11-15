@@ -63,7 +63,7 @@ export const hello_sh = ({message}) => {
                     cmd: '',
                 },
                 install: {
-                    cmd: 'mkdir -p "$DESTDIR/bin" && cp "$EXT_src"/hello "$DESTDIR/bin"',
+                    cmd: 'mkdir -p "$DESTDIR/bin" && install "$EXT_src"/hello "$DESTDIR/bin"',
                 },
                 fixup: {
                     cmd: '',

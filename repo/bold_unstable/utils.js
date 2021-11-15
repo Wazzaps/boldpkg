@@ -61,15 +61,22 @@ function deep_merge(source, target) {
 
 export class Repo {
     constructor() {
+        this.named_recipes = {};
         this.recipes = {};
         this.systems = {};
     }
 
-    addRecipe(recipe) {
+    addRecipe(recipe, unique_name = true) {
         if (typeof recipe === "function") {
             recipe = recipe({});
         }
         this.recipes[`${recipe.metadata.name}@${recipe.hash()}`] = recipe.metadata;
+        if (unique_name) {
+            if (this.named_recipes.hasOwnProperty(recipe.metadata.name)) {
+                throw "Duplicate recipe name marked as 'unique_name'";
+            }
+            this.named_recipes[recipe.metadata.name] = recipe.hash();
+        }
     }
 
     addSystem(alias, system) {
@@ -88,14 +95,15 @@ export class Repo {
 
     toString() {
         return sortedJsonStringify({
+            named_recipes: this.named_recipes,
             recipes: this.recipes,
             systems: this.systems,
         });
     }
 
     addCommonRecipes() {
-        this.addRecipe(apps.hello_sh);
-        this.addRecipe(apps.busybox);
+        this.addRecipe(apps.hello_sh, true);
+        this.addRecipe(apps.busybox, true);
     }
 }
 

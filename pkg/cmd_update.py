@@ -28,7 +28,7 @@ def _repo_to_cache(results, snapshot_dir):
     # Populate cache
     db = sqlite3.connect(snapshot_dir / 'cache.db3')
     with db:
-        # Create table
+        # Create schema
         db.execute('''
             CREATE TABLE "packages"
             (
@@ -38,6 +38,14 @@ def _repo_to_cache(results, snapshot_dir):
                 "metadata"          TEXT    NOT NULL,
                 "recipe"            TEXT,
                 PRIMARY KEY ("name", "hash")
+            );
+        ''')
+        db.execute('''
+            CREATE TABLE "named_packages"
+            (
+                "name"              TEXT    NOT NULL,
+                "hash"              TEXT    NOT NULL,
+                PRIMARY KEY ("name")
             );
         ''')
 
@@ -59,6 +67,10 @@ def _repo_to_cache(results, snapshot_dir):
                     json.dumps(app_recipe, sort_keys=True)
                 )
             )
+
+        # Insert all named packages
+        for app_name, app_hash in results['named_recipes'].items():
+            db.execute('INSERT INTO named_packages (name, hash) VALUES (?, ?)', (app_name, app_hash))
 
 
 def read_config(root: Path):

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 from pathlib import Path
 
@@ -6,7 +7,7 @@ from cmd_hack import cmd_hack
 from cmd_update import cmd_update
 from cmd_install import cmd_install
 
-ROOT = Path(__file__).parent.parent / 'bold'
+ROOT = Path('/bold')
 
 
 def unimplemented(_args):
@@ -53,6 +54,7 @@ def main():
     parser_info.set_defaults(func=unimplemented)
 
     parser_hack = subparsers.add_parser('hack')
+    parser_hack.add_argument('-b', '--build', action='store_true', help='Build and package immediately   ')
     parser_hack.add_argument('app', nargs='+', help='Name of the app(s) to work on')
     parser_hack.set_defaults(func=cmd_hack)
 

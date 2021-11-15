@@ -14,7 +14,6 @@ repo.addRecipe(
 // Add systems below
 repo.addSystem("localhost", new System({
     packages: [
-        apps.hello_sh({ message: "Foo bar baz!" }).override({ name: "hello_sh2" })
         // apps.hello_sh,
         // apps.busybox,
     ],

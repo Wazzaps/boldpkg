@@ -9,7 +9,9 @@ from typing import Dict
 import toml as toml
 from yaspin import yaspin
 
-from snapshots import create_snapshot, current_snapshot_metadata, current_snapshot_repo_hash
+from cmd_install import install_package
+from utils import parse_package_names
+from snapshots import current_snapshot_metadata, current_snapshot_repo_hash, prepare_snapshot, commit_snapshot
 
 
 def _build_repo(root: Path, config: Dict):
@@ -21,12 +23,13 @@ def _build_repo(root: Path, config: Dict):
             stdout=sp.PIPE, stderr=sp.PIPE, cwd=str(repo_dir)
         )
         stdout, stderr = proc.communicate()
+        if stderr:
+            raise RuntimeError(stderr.decode())
         return json.loads(stdout), hashlib.sha256(stdout).hexdigest()
 
 
-def _repo_to_cache(results, snapshot_dir):
+def _repo_to_cache(results, db):
     # Populate cache
-    db = sqlite3.connect(snapshot_dir / 'cache.db3')
     with db:
         # Create schema
         db.execute('''
@@ -87,41 +90,58 @@ def cmd_update(args):
             print('No updates available')
             return
 
+    current_metadata['packages'] = current_metadata.get('packages', {})
+    current_metadata['named_packages'] = current_metadata.get('named_packages', {})
+    current_metadata['systems'] = current_metadata.get('systems', {})
+
     # TODO: Compare hash of just package part / just systems part
 
-    current_installed_packages = current_metadata.get('installedPackages', [])
-    current_global_packages = current_metadata.get('globalPackages', [])
+    current_metadata['packages'] = {k: v for k, v in current_metadata['packages'].items() if v['exact']}
 
     # Get changed packages
     if config['systemAlias'] in repo['systems']:
         if current_metadata:
             current_system = current_metadata['systems'].get(config['systemAlias'], {})
-            current_packages = set(current_system.get('packages', []))
+            current_sys_packages = set(current_system.get('packages', []))
         else:
-            current_packages = set()
+            current_sys_packages = set()
         next_packages = set(repo['systems'][config['systemAlias']]['packages'])
 
-        added_packages = next_packages - current_packages
-        removed_packages = current_packages - next_packages
+        added_packages = next_packages - current_sys_packages
+        removed_packages = current_sys_packages - next_packages
 
-        current_installed_packages = [p for p in current_installed_packages if p not in removed_packages]
-        current_installed_packages.extend([p for p in sorted(added_packages) if p not in current_installed_packages])
+        for pkg in added_packages:
+            # TODO: Not all pkgs should be global
+            current_metadata['packages'][pkg] = {'exact': True, 'global': True}
+        for pkg in removed_packages:
+            del current_metadata['packages'][pkg]
 
-        current_global_packages = [p for p in current_global_packages if p not in removed_packages]
-        current_global_packages.extend([p for p in sorted(added_packages) if p not in current_global_packages])
+    # Prepare snapshot
+    snapshot_dir = prepare_snapshot(root)
+    db = sqlite3.connect(snapshot_dir / 'cache.db3')
+    _repo_to_cache(repo, db)
 
+    # Add named packages
+    for pkg, exact_pkg in parse_package_names(db, list(current_metadata['named_packages'].keys())).items():
+        current_metadata['packages'][exact_pkg] = {
+            'exact': False,
+            'global': current_metadata['named_packages'][pkg]['global']
+        }
+
+    # Install missing packages
+    with yaspin(text='') as spinner:
+        for package in current_metadata['packages']:
+            if not install_package(package, root, db, spinner):
+                return
+
+    metadata = {
+        'alias': None,
+        'description': 'Updated from local package repository',
+        'created': datetime.datetime.now().isoformat(),
+        'named_packages': current_metadata['named_packages'],
+        'packages': current_metadata['packages'],
+        'repoHash': repo_hash,
+        'systems': repo['systems'],
+    }
     with yaspin(text='Creating snapshot with new updates'):
-        create_snapshot(
-            root=root,
-            metadata={
-                'alias': None,
-                'description': 'Updated from local package repository',
-                'created': datetime.datetime.now().isoformat(),
-                'installedPackages': current_installed_packages,
-                'globalPackages': current_global_packages,
-                'repoHash': repo_hash,
-                'systems': repo['systems'],
-            },
-            cache_generator=lambda snapshot_dir: _repo_to_cache(repo, snapshot_dir),
-            switch=True
-        )
+        commit_snapshot(root, metadata, switch=True)

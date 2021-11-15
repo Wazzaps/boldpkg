@@ -66,7 +66,7 @@ export class Repo {
         this.systems = {};
     }
 
-    addRecipe(recipe, unique_name = true) {
+    addRecipe(recipe, unique_name = false) {
         if (typeof recipe === "function") {
             recipe = recipe({});
         }

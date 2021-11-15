@@ -49,6 +49,7 @@ A mix of the reproducibility of [`Nix`](https://nixos.org) and the user-friendli
 - [x] Hacking on packages
 - [x] `System` support
 - [x] Build packages to archives
+- [x] Packages installed manually by name stick through updates
 - [ ] Also install dependencies
   - [ ] In `bold install`
   - [ ] In `System`s

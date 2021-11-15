@@ -34,7 +34,7 @@ def create_merged_dir(src_dirs: List[Path], output_dir: Path):
         create_merged_dir(dir_srcs[dir], output_dir / dir)
 
 
-def create_snapshot(root: Path, metadata: Dict, cache_generator, parent=None, switch=False):
+def prepare_snapshot(root: Path, parent=None):
     # FIXME
     if parent:
         raise NotImplementedError('Parent is hardcoded to "current" for now')
@@ -42,22 +42,21 @@ def create_snapshot(root: Path, metadata: Dict, cache_generator, parent=None, sw
     snapshot_dir = root / 'snapshot'
     (snapshot_dir / 'next').mkdir(parents=True)
 
+    return snapshot_dir / 'next'
+
+
+def commit_snapshot(root: Path, metadata: Dict, parent=None, switch=False):
+    snapshot_dir = root / 'snapshot'
+
     # Write metadata
     with (snapshot_dir / 'next' / 'metadata.json').open('w') as f:
         f.write(json.dumps(metadata, sort_keys=True))
 
-    # Generate package cache
-    try:
-        cache_generator(snapshot_dir / 'next')
-    except BaseException:
-        shutil.rmtree(snapshot_dir / 'next')
-        raise
-
     # Generate root
     create_merged_dir([
         root / 'app' / package
-        for package in
-        metadata['globalPackages']
+        for package in metadata['packages']
+        if metadata['packages'][package]['global']
     ], snapshot_dir / 'next' / 'root')
     (snapshot_dir / 'next' / 'root' / 'bold').mkdir()
 

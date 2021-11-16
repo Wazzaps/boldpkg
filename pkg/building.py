@@ -156,7 +156,10 @@ def build_packages(packages: List[str], root: Path, workspace: Path,
         for package in packages:
             package_esc = package.replace('@', '_')
             spinner.text = f'{spinner_prefix}Preparing {package} ({phase})'
-            sp.check_output(['sh', '-c', f'. {_quote(workspace / "activate.sh")} && bold_{phase}_{package_esc}'])
+            sp.check_output(
+                ['sh', '-c', f'. {_quote(workspace / "activate.sh")} && bold_{phase}_{package_esc}'],
+                stderr=sp.PIPE
+            )
 
     # Pack result
     if do_pack:

@@ -40,7 +40,12 @@ export const busybox = ({}) => {
     });
 };
 
-export const hello_sh = ({message}) => {
+export const hello_sh = (
+    {
+        message = "Hello, World!",
+        filename = "hello"
+    }
+) => {
     return new Recipe({
         name: "hello_sh",
         version: "0.1.0",
@@ -54,7 +59,7 @@ export const hello_sh = ({message}) => {
                     cmd: '',
                 },
                 patch: {
-                    cmd: `echo "echo \"${message ?? "Hello, World!"}\"" >> "$EXT_src"/hello`,
+                    cmd: `echo "echo \"${message}\"" >> "$EXT_src"/hello`,
                 },
                 build: {
                     cmd: '',
@@ -63,7 +68,7 @@ export const hello_sh = ({message}) => {
                     cmd: '',
                 },
                 install: {
-                    cmd: 'mkdir -p "$DESTDIR/bin" && install "$EXT_src"/hello "$DESTDIR/bin"',
+                    cmd: `mkdir -p "$DESTDIR/bin" && install "$EXT_src"/hello "$DESTDIR/bin/${filename}"`,
                 },
                 fixup: {
                     cmd: '',

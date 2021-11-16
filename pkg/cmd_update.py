@@ -90,13 +90,11 @@ def cmd_update(args):
             print('No updates available')
             return
 
-    current_metadata['packages'] = current_metadata.get('packages', {})
+    current_metadata['packages'] = {}
     current_metadata['named_packages'] = current_metadata.get('named_packages', {})
     current_metadata['systems'] = current_metadata.get('systems', {})
 
     # TODO: Compare hash of just package part / just systems part
-
-    current_metadata['packages'] = {k: v for k, v in current_metadata['packages'].items() if v['exact']}
 
     # Get changed packages
     if config['systemAlias'] in repo['systems']:
@@ -112,9 +110,10 @@ def cmd_update(args):
 
         for pkg in added_packages:
             # TODO: Not all pkgs should be global
-            current_metadata['packages'][pkg] = {'exact': True, 'global': True}
+            current_metadata['packages'][pkg] = {'global': True}
         for pkg in removed_packages:
-            del current_metadata['packages'][pkg]
+            if pkg in current_metadata['packages']:
+                del current_metadata['packages'][pkg]
 
     # Prepare snapshot
     snapshot_dir = prepare_snapshot(root)
@@ -123,10 +122,7 @@ def cmd_update(args):
 
     # Add named packages
     for pkg, exact_pkg in parse_package_names(db, list(current_metadata['named_packages'].keys())).items():
-        current_metadata['packages'][exact_pkg] = {
-            'exact': False,
-            'global': current_metadata['named_packages'][pkg]['global']
-        }
+        current_metadata['packages'][exact_pkg] = current_metadata['named_packages'][pkg]
 
     # Install missing packages
     with yaspin(text='') as spinner:

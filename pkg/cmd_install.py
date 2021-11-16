@@ -65,9 +65,8 @@ def cmd_install(args):
                 return
 
     for pkg, exact_pkg in parsed_packages.items():
-        current_metadata['packages'][exact_pkg] = {'exact': pkg == exact_pkg, 'global': True}
-        if pkg != exact_pkg:
-            current_metadata['named_packages'][pkg] = {'global': True}
+        current_metadata['packages'][exact_pkg] = {'global': True}
+        current_metadata['named_packages'][pkg] = {'global': True}
 
     # Create new snapshot
     with yaspin(text='Creating snapshot with new packages'):

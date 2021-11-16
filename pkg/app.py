@@ -6,6 +6,8 @@ from cmd_search import cmd_search
 from cmd_hack import cmd_hack
 from cmd_update import cmd_update
 from cmd_install import cmd_install
+from cmd_remove import cmd_remove
+from cmd_list import cmd_list
 
 ROOT = Path('/bold')
 
@@ -28,7 +30,7 @@ def main():
     parser_install = subparsers.add_parser('remove')
     parser_install.add_argument('app', nargs='+', help='Name of the app(s) to install')
     # parser_install.add_argument('-q', '--queue', action='store_true', help='Finish install on next `bold switch`')
-    parser_install.set_defaults(func=unimplemented)
+    parser_install.set_defaults(func=cmd_remove)
 
     parser_update = subparsers.add_parser('update')
     parser_update.add_argument('app', nargs='*', help='Name of the app(s) to update')
@@ -49,9 +51,12 @@ def main():
     parser_config.add_argument('app', nargs='?', help='Name of the app to config')
     parser_config.set_defaults(func=unimplemented)
 
-    parser_info = subparsers.add_parser('info')
-    parser_info.add_argument('app', help='Name of the app to get info about')
-    parser_info.set_defaults(func=unimplemented)
+    parser_list = subparsers.add_parser('list')
+    parser_list.add_argument('-i', '--installed', action='store_true', help='Only show installed packages')
+    parser_list.add_argument('-m', '--manually', action='store_true', help='Only show manually installed packages')
+    parser_list.add_argument('-1', '--lines', action='store_true', help='One package per line, no description')
+    parser_list.add_argument('app', nargs='?', help='Name of the app to get info about')
+    parser_list.set_defaults(func=cmd_list)
 
     parser_hack = subparsers.add_parser('hack')
     parser_hack.add_argument('-b', '--build', action='store_true', help='Build and package immediately   ')

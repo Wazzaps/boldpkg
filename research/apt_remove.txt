@@ -1,0 +1,11 @@
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+The following packages will be REMOVED:
+  alttab*
+0 upgraded, 0 newly installed, 1 to remove and 13 not upgraded.
+After this operation, 116 kB disk space will be freed.
+Do you want to continue? [Y/n]
+(Reading database ... 693544 files and directories currently installed.)
+Removing alttab (1.5.0-1) ...
+Processing triggers for man-db (2.9.4-2) ...

@@ -167,6 +167,8 @@ def build_packages(packages: List[str], root: Path, workspace: Path,
         for package in packages:
             sp.call([
                 'tar', '-Izstd -10',
+                # unix time 946684800 == 2000-01-01 00:00:00
+                '--sort=name', '--mtime=@946684800', '--owner=0', '--group=0', '--numeric-owner',
                 '-cf', root / 'cache' / 'bold' / 'bincache' / f'{package}.tar.zst',
                 '-C', workspace / 'dest' / package, '.'
             ])

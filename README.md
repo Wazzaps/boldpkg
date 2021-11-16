@@ -60,6 +60,8 @@ A mix of the reproducibility of [`Nix`](https://nixos.org) and the user-friendli
 - [x] Build packages if missing from binary cache
 - [x] Mirror server
 - [ ] Build server
+  - [ ] Generate bsdiff from current + most common named version of the package to each version of package  
+  - [ ] Save diff only if smaller than new package
 - [ ] Package signatures
 - [ ] Add lots of packages
 - [ ] Host Build+Mirror server

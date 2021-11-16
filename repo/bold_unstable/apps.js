@@ -42,7 +42,7 @@ export const busybox = ({}) => {
 
 export const hello_sh = (
     {
-        message = "Hello, World!",
+        message = "Hello, World",
         filename = "hello"
     }
 ) => {

@@ -1,0 +1,12 @@
+Hit:1 http://ppa.launchpad.net/system76/pop/ubuntu hirsute InRelease
+Hit:2 http://us.archive.ubuntu.com/ubuntu hirsute InRelease
+Hit:3 http://apt.pop-os.org/proprietary hirsute InRelease
+Hit:4 http://us.archive.ubuntu.com/ubuntu hirsute-security InRelease
+Hit:5 http://us.archive.ubuntu.com/ubuntu hirsute-updates InRelease
+Hit:6 http://us.archive.ubuntu.com/ubuntu hirsute-backports InRelease
+Hit:7 https://repo.waydro.id hirsute InRelease
+Hit:8 https://dl.winehq.org/wine-builds/ubuntu hirsute InRelease
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+13 packages can be upgraded. Run 'apt list --upgradable' to see them.

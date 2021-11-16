@@ -1,4 +1,10 @@
+from pathlib import Path
 from typing import List
+import toml
+
+
+def read_config(root: Path):
+    return toml.load(root / 'config.toml')
 
 
 def parse_package_names(db, packages: List[str]):

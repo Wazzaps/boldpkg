@@ -55,10 +55,10 @@ A mix of the reproducibility of [`Nix`](https://nixos.org) and the user-friendli
   - [ ] In `System`s
 - [ ] Add glibc, gcc, coreutils, bash packages
 - [ ] Queue install until reboot
-- [ ] Package removal
-- [ ] Actually fetch packages
+- [x] Package removal
+- [x] Actually fetch packages
 - [x] Build packages if missing from binary cache
-- [ ] Mirror server
+- [x] Mirror server
 - [ ] Build server
 - [ ] Package signatures
 - [ ] Add lots of packages

@@ -5,17 +5,15 @@ import sqlite3
 import subprocess as sp
 from pathlib import Path
 from typing import Dict
-
-import toml as toml
 from yaspin import yaspin
 
 from cmd_install import install_package
-from utils import parse_package_names
-from snapshots import current_snapshot_metadata, current_snapshot_repo_hash, prepare_snapshot, commit_snapshot
+from utils import parse_package_names, read_config
+from snapshots import current_snapshot_metadata, prepare_snapshot, commit_snapshot
 
 
 def _build_repo(root: Path, config: Dict):
-    repo_dir = (root / config['repo']).resolve()
+    repo_dir = (root / config['localRepo']).resolve()
     repo_main = repo_dir / 'main.js'
     with yaspin(text='Generating package list'):
         proc = sp.Popen(
@@ -74,10 +72,6 @@ def _repo_to_cache(results, db):
         # Insert all named packages
         for app_name, app_hash in results['named_recipes'].items():
             db.execute('INSERT INTO named_packages (name, hash) VALUES (?, ?)', (app_name, app_hash))
-
-
-def read_config(root: Path):
-    return toml.load(root / 'config.toml')
 
 
 def cmd_update(args):

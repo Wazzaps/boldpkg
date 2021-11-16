@@ -7,7 +7,7 @@ import subprocess as sp
 from yaspin import yaspin
 
 from building import build_packages
-from utils import parse_package_names
+from utils import parse_package_names, read_config
 from snapshots import prepare_snapshot, commit_snapshot, current_snapshot_metadata
 
 
@@ -20,17 +20,35 @@ def install_package(package: str, root: Path, db, spinner):
 
     if not bincache_archive.exists():
         # TODO: Download from https repo
+        config = read_config(root)
+        for bincache_server in config['binaryCaches']:
+            url = f'{bincache_server}/{package}.tar.zst'
+            spinner.text = f'Downloading {package} from {bincache_server}'
+            try:
+                sp.run(
+                    ['curl', '--fail', '-L', url, '-o', str(bincache_archive)],
+                    check=True,
+                    stdout=sp.DEVNULL,
+                    stderr=sp.DEVNULL,
+                )
+            except sp.CalledProcessError:
+                continue
+            break
+        else:
+            # Last resort, build it
+            spinner.stop()
+            print(f'Could not download {package} from any binary cache, building it')
+            spinner.start()
 
-        # Last resort, build it
-        workspace = (root / 'cache' / 'bold' / 'build' / package)
-        phases = ['fetch', 'unpack', 'patch', 'build', 'check', 'install', 'fixup', 'installCheck', 'pack']
-        try:
-            build_packages(
-                [package], root, workspace, phases,
-                spinner, db, 'Building package: '
-            )
-        finally:
-            shutil.rmtree(workspace, ignore_errors=True)
+            workspace = (root / 'cache' / 'bold' / 'build' / package)
+            phases = ['fetch', 'unpack', 'patch', 'build', 'check', 'install', 'fixup', 'installCheck', 'pack']
+            try:
+                build_packages(
+                    [package], root, workspace, phases,
+                    spinner, db, 'Building package: '
+                )
+            finally:
+                shutil.rmtree(workspace, ignore_errors=True)
 
     (root / 'app' / package).mkdir(parents=True)
     sp.call(['tar', '-xf', str(bincache_archive), '-C', str(root / 'app' / package)])

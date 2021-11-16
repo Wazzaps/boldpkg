@@ -1,6 +1,4 @@
 import json
-import os
-import shutil
 from pathlib import Path
 from typing import Dict, List
 
@@ -81,8 +79,3 @@ def current_snapshot_metadata(root: Path) -> Dict:
             return json.load(f)
     except FileNotFoundError:
         return {}
-
-
-def current_snapshot_repo_hash(root: Path) -> str:
-    with (root / 'snapshot' / 'current' / 'repo_hash').open() as f:
-        return f.read().strip()

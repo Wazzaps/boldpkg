@@ -50,6 +50,9 @@ export const hello_sh = (
         name: "hello_sh",
         version: "0.1.0",
         shortDesc: "A simple hello world app",
+        depends: {
+            busybox,
+        },
         recipe: {
             externals: {
                 src: 'src://hello_sh',
@@ -59,7 +62,7 @@ export const hello_sh = (
                     cmd: '',
                 },
                 patch: {
-                    cmd: `echo "echo \"${message}\"" >> "$EXT_src"/hello`,
+                    cmd: `sed -i "s:/bin/sh:$DEP_busybox/bin/sh:g" "$EXT_src"/hello; echo "echo \"${message}\"" >> "$EXT_src"/hello`,
                 },
                 build: {
                     cmd: '',

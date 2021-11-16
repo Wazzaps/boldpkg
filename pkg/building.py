@@ -18,6 +18,13 @@ def get_recipe(db, package):
     return json.loads(recipe)
 
 
+def get_metadata(db, package):
+    pkg_name, _, pkg_hash = package.partition('@')
+    cursor = db.cursor().execute('select metadata from packages where name=? and hash=?', (pkg_name, pkg_hash))
+    metadata, = cursor.fetchone()
+    return json.loads(metadata)
+
+
 class ExternalResource:
     def __init__(self, package, name, uri):
         self.package = package
@@ -67,6 +74,7 @@ def build_packages(packages: List[str], root: Path, workspace: Path,
 
     # Get all recipes
     recipes = {package: get_recipe(db, package) for package in packages}
+    metadatas = {package: get_metadata(db, package) for package in packages}
 
     # Collect external resources
     externals = []
@@ -97,7 +105,8 @@ def build_packages(packages: List[str], root: Path, workspace: Path,
                     script += f'  _oldpath=`pwd`; cd {workspace}\n'
                     script += f'  export DESTDIR={_quote(workspace / "dest" / package)}\n'
                     script += f'  mkdir -p "$DESTDIR"\n'
-                    # TODO: DEP_* for deps
+                    for dep_name, dep_id in metadatas[package]['depends'].items():
+                        script += f'  export DEP_{dep_name}={_quote(root / "app" / dep_id)}\n'
                     for external in externals:
                         if external.package == package:
                             script += f'  export EXT_{external.name}={_quote(workspace / external.full_name)}\n'
@@ -107,6 +116,8 @@ def build_packages(packages: List[str], root: Path, workspace: Path,
                     for external in externals:
                         if external.package == package:
                             script += f'  unset EXT_{external.name}\n'
+                    for dep_name, _ in metadatas[package]['depends'].items():
+                        script += f'  unset DEP_{dep_name}\n'
                     script += f'  cd $_oldpath\n'
                     script += f'}}\n'
 

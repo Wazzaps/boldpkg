@@ -71,6 +71,9 @@ export class Repo {
             recipe = recipe({});
         }
         this.recipes[`${recipe.metadata.name}@${recipe.hash()}`] = recipe.metadata;
+        Object.values(recipe.subrecipes).forEach((subrecipe) => {
+            this.addRecipe(subrecipe);
+        });
         if (unique_name) {
             if (this.named_recipes.hasOwnProperty(recipe.metadata.name)) {
                 throw "Duplicate recipe name marked as 'unique_name'";
@@ -110,6 +113,16 @@ export class Repo {
 export class Recipe {
     constructor(metadata) {
         this.metadata = metadata;
+        this.subrecipes = {};
+        metadata.depends = metadata.depends || {};
+        metadata.depends = Object.fromEntries(Object.entries(metadata.depends).map(([dep_name, dep]) => {
+            if (typeof dep === "function") {
+                dep = dep({});
+            }
+            let dep_id = `${dep.metadata.name}@${dep.hash()}`;
+            this.subrecipes[dep_id] = dep;
+            return [dep_name, dep_id];
+        }));
         this.recipe = metadata.recipe;
     }
 

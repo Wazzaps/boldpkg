@@ -50,9 +50,10 @@ A mix of the reproducibility of [`Nix`](https://nixos.org) and the user-friendli
 - [x] `System` support
 - [x] Build packages to archives
 - [x] Packages installed manually by name stick through updates
-- [ ] Also install dependencies
-  - [ ] In `bold install`
-  - [ ] In `System`s
+- [x] Also install dependencies
+  - [x] In `bold install`
+  - [x] In `System`s
+  - [ ] Handle recursive dependencies
 - [ ] Add glibc, gcc, coreutils, bash packages
 - [ ] Queue install until reboot
 - [x] Package removal

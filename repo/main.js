@@ -8,7 +8,9 @@ repo.addCommonRecipes();
 // Example: repo.addRecipe(apps.hello_sh({ message: "Foo bar!" }).override({ name: "hello_sh2" }));
 
 // repo.addRecipe(
-//     apps.hello_sh({message: "Foo bar!"}).override({name: "hello_sh2"}),
+//     apps
+//         .hello_sh({message: "Foo bar!", filename: "hello_bar"})
+//         .override({name: "hello_sh2"}),
 //     true
 // );
 // repo.addRecipe(

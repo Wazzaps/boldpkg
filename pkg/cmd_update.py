@@ -23,7 +23,7 @@ def _build_repo(root: Path, config: Dict):
         )
         stdout, stderr = proc.communicate()
         if stderr:
-            raise RuntimeError(stderr.decode())
+            raise RuntimeError(stdout.decode() + '\n' + stderr.decode())
         return json.loads(stdout), hashlib.sha256(stdout).hexdigest()
 
 
@@ -129,8 +129,9 @@ def cmd_update(args):
 
     # Install missing packages
     with yaspin(text='') as spinner:
-        for package in current_metadata['packages']:
-            if not install_package(package, root, db, spinner):
+        total_len = len(current_metadata['packages'])
+        for i, package in enumerate(current_metadata['packages']):
+            if not install_package(package, root, db, spinner, f'[{i+1}/{total_len}]: '):
                 return
 
     metadata = {
@@ -144,3 +145,5 @@ def cmd_update(args):
     }
     with yaspin(text='Creating snapshot with new updates'):
         commit_snapshot(root, metadata, switch=True)
+
+    print('Done :)')

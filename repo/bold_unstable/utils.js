@@ -115,7 +115,11 @@ export class Recipe {
         this.metadata = metadata;
         this.subrecipes = {};
         metadata.depends = metadata.depends || {};
+
         metadata.depends = Object.fromEntries(Object.entries(metadata.depends).map(([dep_name, dep]) => {
+            if (typeof dep === "string") {
+                return [dep_name, dep];
+            }
             if (typeof dep === "function") {
                 dep = dep({});
             }

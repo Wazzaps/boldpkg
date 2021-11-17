@@ -1,6 +1,7 @@
 import datetime
 import shutil
 import sqlite3
+import urllib.parse
 from pathlib import Path
 import subprocess as sp
 
@@ -11,7 +12,7 @@ from utils import parse_package_names, read_config
 from snapshots import prepare_snapshot, commit_snapshot, current_snapshot_metadata
 
 
-def install_package(package: str, root: Path, db, spinner):
+def install_package(package: str, root: Path, db, spinner, spinner_prefix=''):
     spinner.text = f'Installing {package}'
     bincache_archive = root / 'cache' / 'bold' / 'bincache' / f'{package}.tar.zst'
 
@@ -21,9 +22,14 @@ def install_package(package: str, root: Path, db, spinner):
     if not bincache_archive.exists():
         # TODO: Download from https repo
         config = read_config(root)
+        original_side = spinner.side
+        original_color = spinner.color
+        spinner.side = 'right'
+        spinner.color = 'cyan'
         for bincache_server in config['binaryCaches']:
             url = f'{bincache_server}/{package}.tar.zst'
-            spinner.text = f'Downloading {package} from {bincache_server}'
+            bincache_host = urllib.parse.urlparse(bincache_server).hostname
+            spinner.text = f'{spinner_prefix}Downloading {package} from {bincache_host}'
             try:
                 sp.run(
                     ['curl', '--fail', '-L', url, '-o', str(bincache_archive)],
@@ -32,7 +38,14 @@ def install_package(package: str, root: Path, db, spinner):
                     stderr=sp.DEVNULL,
                 )
             except sp.CalledProcessError:
+                spinner.stop()
+                print(spinner.text + ' [FAIL]')
+                spinner.start()
                 continue
+
+            spinner.stop()
+            print(spinner.text + ' [OK]')
+            spinner.start()
             break
         else:
             # Last resort, build it
@@ -45,10 +58,12 @@ def install_package(package: str, root: Path, db, spinner):
             try:
                 build_packages(
                     [package], root, workspace, phases,
-                    spinner, db, 'Building package: '
+                    spinner, db, f'{spinner_prefix}Building package: '
                 )
             finally:
                 shutil.rmtree(workspace, ignore_errors=True)
+        spinner.side = original_side
+        spinner.color = original_color
 
     (root / 'app' / package).mkdir(parents=True)
     sp.call(['tar', '-xf', str(bincache_archive), '-C', str(root / 'app' / package)])
@@ -109,3 +124,5 @@ def cmd_install(args):
         snapshot_dir = prepare_snapshot(root)
         (root / 'snapshot/current/cache.db3').link_to(snapshot_dir / 'cache.db3')
         commit_snapshot(root, metadata, switch=True)
+
+    print('Done :)')

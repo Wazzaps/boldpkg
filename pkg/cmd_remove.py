@@ -55,3 +55,5 @@ def cmd_remove(args):
         snapshot_dir = prepare_snapshot(root)
         (root / 'snapshot/current/cache.db3').link_to(snapshot_dir / 'cache.db3')
         commit_snapshot(root, metadata, switch=True)
+
+    print('Done :)')

@@ -3,5 +3,6 @@ quickjsPath = "src/quickjs"
 systemAlias = "localhost"
 
 binaryCaches = [
-    "http://localhost:2222/bincache"
+    "http://localhost:2222/bincache",
+    "http://sourcedigger1:2222/bincache",
 ]

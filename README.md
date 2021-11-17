@@ -75,7 +75,7 @@ bold install <package>...
 bold remove <package>...
 bold update
 bold search
-bold info <package>
+bold list [package]
 
 # Snapshot manipulation
 bold switch [snapshot]

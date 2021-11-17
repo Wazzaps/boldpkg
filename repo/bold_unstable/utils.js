@@ -107,6 +107,8 @@ export class Repo {
     addCommonRecipes() {
         this.addRecipe(apps.hello_sh, true);
         this.addRecipe(apps.busybox, true);
+        this.addRecipe(apps.libexample, true);
+        this.addRecipe(apps.libexample_bin, true);
     }
 }
 
@@ -115,6 +117,7 @@ export class Recipe {
         this.metadata = metadata;
         this.subrecipes = {};
         metadata.depends = metadata.depends || {};
+        metadata.recipe.buildDepends = metadata.recipe.buildDepends || {};
 
         metadata.depends = Object.fromEntries(Object.entries(metadata.depends).map(([dep_name, dep]) => {
             if (typeof dep === "string") {
@@ -127,6 +130,19 @@ export class Recipe {
             this.subrecipes[dep_id] = dep;
             return [dep_name, dep_id];
         }));
+
+        metadata.recipe.buildDepends = Object.fromEntries(Object.entries(metadata.recipe.buildDepends).map(([dep_name, dep]) => {
+            if (typeof dep === "string") {
+                return [dep_name, dep];
+            }
+            if (typeof dep === "function") {
+                dep = dep({});
+            }
+            let dep_id = `${dep.metadata.name}@${dep.hash()}`;
+            this.subrecipes[dep_id] = dep;
+            return [dep_name, dep_id];
+        }));
+
         this.recipe = metadata.recipe;
     }
 
@@ -147,4 +163,8 @@ export class System {
     override(updates) {
         return new System(deep_merge(updates, deep_merge(this.metadata, {})));
     }
+}
+
+export function cLibrary(name) {
+    return `-Wl,-rpath -Wl,"$DEP_${name}"/lib -isystem "$EXT_${name}" -L"$BDEP_${name}"/lib -l:${name}.so`;
 }

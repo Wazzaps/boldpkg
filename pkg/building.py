@@ -107,6 +107,8 @@ def build_packages(packages: List[str], root: Path, workspace: Path,
                     script += f'  mkdir -p "$DESTDIR"\n'
                     for dep_name, dep_id in metadatas[package]['depends'].items():
                         script += f'  export DEP_{dep_name}={_quote(root / "app" / dep_id)}\n'
+                    for dep_name, dep_id in recipes[package]['buildDepends'].items():
+                        script += f'  export BDEP_{dep_name}={_quote(root / "app" / dep_id)}\n'
                     for external in externals:
                         if external.package == package:
                             script += f'  export EXT_{external.name}={_quote(workspace / external.full_name)}\n'
@@ -116,6 +118,8 @@ def build_packages(packages: List[str], root: Path, workspace: Path,
                     for external in externals:
                         if external.package == package:
                             script += f'  unset EXT_{external.name}\n'
+                    for dep_name, _ in recipes[package]['buildDepends'].items():
+                        script += f'  unset BDEP_{dep_name}\n'
                     for dep_name, _ in metadatas[package]['depends'].items():
                         script += f'  unset DEP_{dep_name}\n'
                     script += f'  cd $_oldpath\n'
@@ -167,10 +171,19 @@ def build_packages(packages: List[str], root: Path, workspace: Path,
         for package in packages:
             package_esc = package.replace('@', '_')
             spinner.text = f'{spinner_prefix}Preparing {package} ({phase})'
-            sp.check_output(
-                ['sh', '-c', f'. {_quote(workspace / "activate.sh")} && bold_{phase}_{package_esc}'],
-                stderr=sp.PIPE
-            )
+            try:
+                sp.check_output(
+                    ['sh', '-c', f'set -e; . {_quote(workspace / "activate.sh")} && bold_{phase}_{package_esc}'],
+                    stderr=sp.PIPE
+                )
+            except sp.CalledProcessError as e:
+                spinner.stop()
+                print(f'Failed to "{phase}" package "{package}", attached logs:')
+                print('==== STDOUT ====')
+                print(e.stdout.decode())
+                print('==== STDERR ====')
+                print(e.stderr.decode())
+                exit(1)
 
     # Pack result
     if do_pack:

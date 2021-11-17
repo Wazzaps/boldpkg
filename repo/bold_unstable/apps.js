@@ -1,4 +1,4 @@
-import {Recipe} from "./utils.js";
+import {cLibrary, Recipe} from "./utils.js";
 
 export const busybox = ({}) => {
     return new Recipe({
@@ -57,6 +57,9 @@ export const hello_sh = (
             externals: {
                 src: 'src://hello_sh',
             },
+            buildDepends: {
+                busybox,
+            },
             phases: {
                 unpack: {
                     cmd: '',
@@ -72,6 +75,97 @@ export const hello_sh = (
                 },
                 install: {
                     cmd: `mkdir -p "$DESTDIR/bin" && install "$EXT_src"/hello "$DESTDIR/bin/${filename}"`,
+                },
+                fixup: {
+                    cmd: '',
+                },
+                installCheck: {
+                    cmd: '',
+                },
+                dist: {
+                    cmd: '',
+                },
+            }
+        },
+    });
+};
+
+export const libexample = (
+    {}
+) => {
+    return new Recipe({
+        name: "libexample",
+        version: "0.1.0",
+        shortDesc: "A simple hello world library",
+        depends: {},
+        recipe: {
+            externals: {
+                src: 'src://libexample',
+            },
+            buildDepends: {},
+            phases: {
+                unpack: {
+                    cmd: '',
+                },
+                patch: {
+                    cmd: '',
+                },
+                build: {
+                    cmd: 'mkdir -p "$DESTDIR"/lib && gcc -shared "$EXT_src"/libexample.c -o "$DESTDIR"/lib/libexample.so',
+                },
+                check: {
+                    cmd: '',
+                },
+                install: {
+                    cmd: '',
+                },
+                fixup: {
+                    cmd: '',
+                },
+                installCheck: {
+                    cmd: '',
+                },
+                dist: {
+                    cmd: '',
+                },
+            }
+        },
+    });
+};
+
+export const libexample_bin = (
+    {}
+) => {
+    return new Recipe({
+        name: "libexample_bin",
+        version: "0.1.0",
+        shortDesc: "A binary that uses libexample",
+        depends: {
+            libexample,
+        },
+        recipe: {
+            externals: {
+                libexample: 'src://libexample',
+                src: 'src://libexample_bin',
+            },
+            buildDepends: {
+                libexample,
+            },
+            phases: {
+                unpack: {
+                    cmd: '',
+                },
+                patch: {
+                    cmd: '',
+                },
+                build: {
+                    cmd: `mkdir -p "$DESTDIR"/bin && gcc "$EXT_src"/main.c ${cLibrary('libexample')} -o "$DESTDIR"/bin/libexample_bin`,
+                },
+                check: {
+                    cmd: '',
+                },
+                install: {
+                    cmd: '',
                 },
                 fixup: {
                     cmd: '',

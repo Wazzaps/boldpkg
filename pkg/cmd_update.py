@@ -9,7 +9,7 @@ from yaspin import yaspin
 
 from cmd_install import install_package
 from building import get_metadata
-from utils import parse_package_names, read_config
+from utils import parse_package_names, read_config, parse_system_names
 from snapshots import current_snapshot_metadata, prepare_snapshot, commit_snapshot
 
 
@@ -50,6 +50,24 @@ def _repo_to_cache(results, db):
                 PRIMARY KEY ("name")
             );
         ''')
+        db.execute('''
+            CREATE TABLE "systems"
+            (
+                "name"              TEXT    NOT NULL,
+                "hash"              TEXT    NOT NULL,
+                "shortdesc"         TEXT    NOT NULL,
+                "metadata"          TEXT    NOT NULL,
+                PRIMARY KEY ("name", "hash")
+            );
+        ''')
+        db.execute('''
+            CREATE TABLE "named_systems"
+            (
+                "name"              TEXT    NOT NULL,
+                "hash"              TEXT    NOT NULL,
+                PRIMARY KEY ("name")
+            );
+        ''')
 
         # Insert all packages
         for app_name, app_metadata in results['recipes'].items():
@@ -70,9 +88,45 @@ def _repo_to_cache(results, db):
                 )
             )
 
+        # Insert all systems
+        for sys_name, sys_metadata in results['systems'].items():
+            sys_name, _, sys_hash = sys_name.partition('@')
+
+            db.execute(
+                'INSERT INTO systems (name, hash, shortdesc, metadata)'
+                'VALUES (?, ?, ?, ?)',
+                (
+                    sys_name,
+                    sys_hash,
+                    sys_metadata['shortDesc'],
+                    json.dumps(sys_metadata, sort_keys=True),
+                )
+            )
+
         # Insert all named packages
         for app_name, app_hash in results['named_recipes'].items():
             db.execute('INSERT INTO named_packages (name, hash) VALUES (?, ?)', (app_name, app_hash))
+
+        # Insert all named systems
+        for sys_name, sys_hash in results['named_systems'].items():
+            db.execute('INSERT INTO named_systems (name, hash) VALUES (?, ?)', (sys_name, sys_hash))
+
+
+def get_system_metadata(db, name):
+    system_name = list(parse_system_names(db, [name]).values())
+    if system_name:
+        system_name, _, system_hash = system_name[0].partition('@')
+    else:
+        return
+
+    with db:
+        metadata = db.execute(
+            'SELECT metadata FROM systems WHERE name = ? AND hash = ?',
+            (system_name, system_hash)
+        ).fetchone()
+        if metadata:
+            return json.loads(metadata[0])
+        return None
 
 
 def cmd_update(args):
@@ -81,39 +135,26 @@ def cmd_update(args):
     repo, repo_hash = _build_repo(root, config)
     current_metadata = current_snapshot_metadata(root)
     if current_metadata:
+        # TODO: Compare hash of just package part / just systems part
         if current_metadata['repoHash'] == repo_hash:
             print('No updates available')
             return
 
     current_metadata['packages'] = {}
     current_metadata['named_packages'] = current_metadata.get('named_packages', {})
-    current_metadata['systems'] = current_metadata.get('systems', {})
-
-    # TODO: Compare hash of just package part / just systems part
-
-    # Get changed packages
-    if config['systemAlias'] in repo['systems']:
-        if current_metadata:
-            current_system = current_metadata['systems'].get(config['systemAlias'], {})
-            current_sys_packages = set(current_system.get('packages', []))
-        else:
-            current_sys_packages = set()
-        next_packages = set(repo['systems'][config['systemAlias']]['packages'])
-
-        added_packages = next_packages - current_sys_packages
-        removed_packages = current_sys_packages - next_packages
-
-        for pkg in added_packages:
-            # TODO: Not all pkgs should be global
-            current_metadata['packages'][pkg] = {'global': True}
-        for pkg in removed_packages:
-            if pkg in current_metadata['packages']:
-                del current_metadata['packages'][pkg]
 
     # Prepare snapshot
     snapshot_dir = prepare_snapshot(root)
     db = sqlite3.connect(snapshot_dir / 'cache.db3')
     _repo_to_cache(repo, db)
+
+    # Get packages in tracked system
+    next_system_metadata = get_system_metadata(db, config['systemName'])
+    if next_system_metadata:
+        next_sys_packages = set(next_system_metadata['packages'])
+        for package in next_sys_packages:
+            # TODO: Not all pkgs should be global
+            current_metadata['packages'][package] = {'global': True}
 
     # Add named packages
     for pkg, exact_pkg in parse_package_names(db, list(current_metadata['named_packages'].keys())).items():
@@ -141,7 +182,6 @@ def cmd_update(args):
         'named_packages': current_metadata['named_packages'],
         'packages': current_metadata['packages'],
         'repoHash': repo_hash,
-        'systems': repo['systems'],
     }
     with yaspin(text='Creating snapshot with new updates'):
         commit_snapshot(root, metadata, switch=True)

@@ -119,7 +119,6 @@ def cmd_install(args):
             'named_packages': current_metadata['named_packages'],
             'packages': current_metadata['packages'],
             'repoHash': current_metadata['repoHash'],
-            'systems': current_metadata['systems'],
         }
         snapshot_dir = prepare_snapshot(root)
         (root / 'snapshot/current/cache.db3').link_to(snapshot_dir / 'cache.db3')

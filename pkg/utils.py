@@ -62,7 +62,7 @@ def parse_package_names(db, packages: List[str]):
             ''', (package,))
 
         found_pkgs = cursor.execute('SELECT name, hash FROM wanted_packages JOIN named_packages USING (name)').fetchall()
-        missing_packages.update(set(wanted_packages) - set(pkg_name for pkg_name, _ in  found_pkgs))
+        missing_packages.update(set(wanted_packages) - set(pkg_name for pkg_name, _ in found_pkgs))
 
         if missing_packages:
             print('The following packages weren\'t found:')
@@ -74,4 +74,73 @@ def parse_package_names(db, packages: List[str]):
             exact_packages[pkg_name] = f'{pkg_name}@{pkg_hash}'
 
     return exact_packages
+
+
+def parse_system_names(db, systems: List[str]):
+    invalid_systems = [s for s in systems if s.count('@') >= 2]
+
+    if invalid_systems:
+        print('The following system names are invalid:')
+        for sys in invalid_systems:
+            print(f'- {sys}')
+        return None
+
+    exact_systems = {s: s for s in systems if s.count('@') == 1}
+    wanted_systems = [s for s in systems if s.count('@') == 0]
+
+    with db:
+        cursor = db.cursor()
+        missing_systems = set()
+
+        # Verify exact systems
+        cursor.execute('''
+            DROP TABLE IF EXISTS wanted_systems
+        ''')
+        cursor.execute('''
+            CREATE TEMPORARY TABLE "wanted_systems"
+            (
+                "name"              TEXT    NOT NULL,
+                "hash"              TEXT    NOT NULL
+            )
+        ''')
+        for system in exact_systems.keys():
+            sys_name, _, sys_hash = system.partition('@')
+            cursor.execute('''
+                INSERT INTO "wanted_systems"
+                VALUES (?, ?)
+            ''', (sys_name, sys_hash))
+
+        found_systems = cursor.execute('SELECT name, hash FROM wanted_systems JOIN systems USING (name, hash)').fetchall()
+        found_systems = [f'{sys_name}@{sys_hash}' for sys_name, sys_hash in found_systems]
+        missing_systems.update(set(exact_systems.keys()) - set(found_systems))
+
+        # Verify and get named systems
+        cursor.execute('''
+            DROP TABLE IF EXISTS wanted_systems
+        ''')
+        cursor.execute('''
+            CREATE TEMPORARY TABLE "wanted_systems"
+            (
+                "name"              TEXT    NOT NULL
+            )
+        ''')
+        for system in wanted_systems:
+            cursor.execute('''
+                INSERT INTO "wanted_systems"
+                VALUES (?)
+            ''', (system,))
+
+        found_systems = cursor.execute('SELECT name, hash FROM wanted_systems JOIN named_systems USING (name)').fetchall()
+        missing_systems.update(set(wanted_systems) - set(sys_name for sys_name, _ in found_systems))
+
+        if missing_systems:
+            print('The following systems weren\'t found:')
+            for sys in sorted(missing_systems):
+                print(f'- {sys}')
+            return None
+
+        for sys_name, sys_hash in found_systems:
+            exact_systems[sys_name] = f'{sys_name}@{sys_hash}'
+
+    return exact_systems
 

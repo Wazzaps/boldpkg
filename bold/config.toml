@@ -1,6 +1,6 @@
 localRepo = "/bold/src/repo"
 quickjsPath = "src/quickjs"
-systemAlias = "localhost"
+systemName = "localhost"
 
 binaryCaches = [
     "http://localhost:2222/bincache",

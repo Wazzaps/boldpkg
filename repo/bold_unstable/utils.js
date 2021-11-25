@@ -60,10 +60,15 @@ function deep_merge(source, target) {
 }
 
 export class Repo {
-    constructor() {
+    constructor(common_recipes = true) {
         this.named_recipes = {};
         this.recipes = {};
+        this.named_systems = {};
         this.systems = {};
+
+        if (common_recipes) {
+            this.addCommonRecipes();
+        }
     }
 
     addRecipe(recipe, unique_name = false) {
@@ -82,10 +87,12 @@ export class Repo {
         }
     }
 
-    addSystem(alias, system) {
+    addSystem(system, unique_name = true) {
         if (typeof system === "function") {
             system = system({});
         }
+
+        // Add all recipes not already added to the repo
         system.metadata.packages = system.metadata.packages.map((recipe) => {
             if (typeof recipe === "function") {
                 recipe = recipe({});
@@ -93,13 +100,21 @@ export class Repo {
             this.addRecipe(recipe);
             return `${recipe.metadata.name}@${recipe.hash()}`;
         });
-        this.systems[alias] = system.metadata;
+
+        this.systems[`${system.metadata.name}@${system.hash()}`] = system.metadata;
+        if (unique_name) {
+            if (this.named_systems.hasOwnProperty(system.metadata.name)) {
+                throw "Duplicate system name marked as 'unique_name' (hint: pass 'false' as the second argument to addSystem)";
+            }
+            this.named_systems[system.metadata.name] = system.hash();
+        }
     }
 
     toString() {
         return sortedJsonStringify({
             named_recipes: this.named_recipes,
             recipes: this.recipes,
+            named_systems: this.named_systems,
             systems: this.systems,
         });
     }
@@ -153,15 +168,27 @@ export class Recipe {
     override(updates) {
         return new Recipe(deep_merge(updates, deep_merge(this.metadata, {})));
     }
+
+    modify(callback) {
+        return new Recipe(callback(deep_merge(this.metadata, {})));
+    }
 }
 
 export class System {
-    constructor({packages, users, deployTarget}) {
-        this.metadata = {packages, users, deployTarget};
+    constructor(metadata) {
+        this.metadata = metadata;
+    }
+
+    hash() {
+        return run_cmd(['./bold_unstable/hashRecipe.sh'], sortedJsonStringify(this.metadata)).trim();
     }
 
     override(updates) {
         return new System(deep_merge(updates, deep_merge(this.metadata, {})));
+    }
+
+    modify(callback) {
+        return new System(callback(deep_merge(this.metadata, {})));
     }
 }
 

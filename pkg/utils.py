@@ -144,3 +144,20 @@ def parse_system_names(db, systems: List[str]):
 
     return exact_systems
 
+
+def find_package_deps(db, packages, visited=None, dependencies=None):
+    from building import get_metadata
+
+    if visited is None:
+        visited = set()
+    if dependencies is None:
+        dependencies = set()
+    for pkg in packages:
+        if pkg in visited:
+            continue
+        pkg_deps = set(get_metadata(db, pkg)['depends'].values())
+        dependencies |= pkg_deps
+        for dep in pkg_deps:
+            dependencies |= find_package_deps(db, [dep], visited, dependencies)
+        visited.add(pkg)
+    return dependencies

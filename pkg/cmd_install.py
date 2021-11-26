@@ -7,8 +7,8 @@ import subprocess as sp
 
 from yaspin import yaspin
 
-from building import build_packages, get_metadata
-from utils import parse_package_names, read_config
+from building import build_packages
+from utils import parse_package_names, read_config, find_package_deps
 from snapshots import prepare_snapshot, commit_snapshot, current_snapshot_metadata
 
 
@@ -90,12 +90,8 @@ def cmd_install(args):
         print('All requested packages already installed')
         return
 
-    # Collect package dependencies
-    dependencies = set()
-    for pkg in parsed_packages.values():
-        dependencies |= set(get_metadata(db, pkg)['depends'].values())
-
     # Add dependencies
+    dependencies = find_package_deps(db, list(parsed_packages.values()))
     current_metadata['packages'] |= {pkg: {'global': False} for pkg in dependencies}
     exact_packages += list(dependencies)
 

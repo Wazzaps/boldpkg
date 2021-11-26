@@ -180,3 +180,49 @@ export const libexample_bin = (
         },
     });
 };
+
+export const libexample_bin_sh = ({}) => {
+    return new Recipe({
+        name: "libexample_bin_sh",
+        version: "0.1.0",
+        shortDesc: "A shell script wrapping libexample_bin",
+        depends: {
+            libexample_bin,
+            busybox,
+        },
+        recipe: {
+            externals: {
+                src: 'src://libexample_bin_sh',
+            },
+            buildDepends: {
+                busybox,
+            },
+            phases: {
+                unpack: {
+                    cmd: '',
+                },
+                patch: {
+                    cmd: `sed -i "s:/bin/sh:$DEP_busybox/bin/sh:g" "$EXT_src"/libexample_bin_sh && sed -i 's:$DEP_libexample_bin:'"$DEP_libexample_bin:g" "$EXT_src"/libexample_bin_sh`,
+                },
+                build: {
+                    cmd: '',
+                },
+                check: {
+                    cmd: '',
+                },
+                install: {
+                    cmd: `mkdir -p "$DESTDIR/bin" && install "$EXT_src"/libexample_bin_sh "$DESTDIR/bin/libexample_bin_sh"`,
+                },
+                fixup: {
+                    cmd: '',
+                },
+                installCheck: {
+                    cmd: '',
+                },
+                dist: {
+                    cmd: '',
+                },
+            }
+        },
+    });
+};

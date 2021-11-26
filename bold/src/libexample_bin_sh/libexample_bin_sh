@@ -1,0 +1,3 @@
+#!/bin/sh
+
+"$DEP_libexample_bin"/bin/libexample_bin | rev

@@ -8,8 +8,7 @@ from typing import Dict
 from yaspin import yaspin
 
 from cmd_install import install_package
-from building import get_metadata
-from utils import parse_package_names, read_config, parse_system_names
+from utils import parse_package_names, read_config, parse_system_names, find_package_deps
 from snapshots import current_snapshot_metadata, prepare_snapshot, commit_snapshot
 
 
@@ -160,12 +159,8 @@ def cmd_update(args):
     for pkg, exact_pkg in parse_package_names(db, list(current_metadata['named_packages'].keys())).items():
         current_metadata['packages'][exact_pkg] = current_metadata['named_packages'][pkg]
 
-    # Collect package dependencies
-    dependencies = set()
-    for pkg in current_metadata['packages']:
-        dependencies |= set(get_metadata(db, pkg)['depends'].values())
-
     # Add dependencies
+    dependencies = find_package_deps(db, list(current_metadata['packages'].keys()))
     current_metadata['packages'] |= {pkg: {'global': False} for pkg in dependencies}
 
     # Install missing packages

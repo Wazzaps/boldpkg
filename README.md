@@ -53,7 +53,7 @@ A mix of the reproducibility of [`Nix`](https://nixos.org) and the user-friendli
 - [x] Also install dependencies
   - [x] In `bold install`
   - [x] In `System`s
-  - [ ] Handle recursive dependencies
+  - [x] Handle recursive dependencies
 - [ ] Add glibc, gcc, coreutils, bash packages
 - [ ] Queue install until reboot
 - [x] Package removal
